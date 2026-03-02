@@ -1,0 +1,77 @@
+# API Service: Fulfillment API
+# Defines an internal REST service that handles warehouse fulfillment and shipping.
+serviceName: fulfillment-api
+serviceType: Rest
+displayName: Fulfillment API
+description: |
+  Internal REST API that handles warehouse picking, packing, and shipment
+  tracking for orders received from the Orders API.
+
+collections:
+  - name: shipments
+    displayName: Shipments
+    description: Endpoints for creating and tracking shipments.
+    endpointURL: https://api.internal.acme.com/v1/shipments
+
+    endpoints:
+      - name: createShipment
+        displayName: Create Shipment
+        description: |
+          Create a new shipment from an order. Consumes order data from the
+          Orders API createOrder endpoint to initiate warehouse fulfillment.
+        endpointURL: https://api.internal.acme.com/v1/shipments
+        requestMethod: POST
+        requestSchema:
+          schemaType: JSON
+          schemaFields:
+            - name: order_id
+              dataType: STRING
+              description: The order ID from the Orders API to fulfill.
+            - name: warehouse_id
+              dataType: STRING
+              description: Warehouse assigned to pick and pack.
+            - name: priority
+              dataType: STRING
+              description: Shipping priority (STANDARD, EXPRESS, OVERNIGHT).
+        responseSchema:
+          schemaType: JSON
+          schemaFields:
+            - name: shipment_id
+              dataType: STRING
+              description: Server-assigned shipment identifier.
+            - name: order_id
+              dataType: STRING
+              description: The originating order ID.
+            - name: status
+              dataType: STRING
+              description: Shipment status (e.g. PICKING, PACKED, SHIPPED).
+            - name: tracking_number
+              dataType: STRING
+              description: Carrier tracking number (populated once shipped).
+            - name: estimated_delivery
+              dataType: STRING
+              description: Estimated delivery date in ISO-8601 format.
+
+      - name: getShipment
+        displayName: Get Shipment
+        description: Retrieve shipment details by shipment ID.
+        endpointURL: https://api.internal.acme.com/v1/shipments/{shipment_id}
+        requestMethod: GET
+        responseSchema:
+          schemaType: JSON
+          schemaFields:
+            - name: shipment_id
+              dataType: STRING
+              description: Unique shipment identifier.
+            - name: order_id
+              dataType: STRING
+              description: The originating order ID.
+            - name: status
+              dataType: STRING
+              description: Current shipment status.
+            - name: tracking_number
+              dataType: STRING
+              description: Carrier tracking number.
+            - name: estimated_delivery
+              dataType: STRING
+              description: Estimated delivery date.
