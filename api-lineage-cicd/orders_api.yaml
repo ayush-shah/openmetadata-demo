@@ -1,0 +1,79 @@
+# API Service: Orders API
+# Defines an internal REST service that manages e-commerce orders.
+serviceName: orders-api
+serviceType: Rest
+displayName: Orders API
+description: |
+  Internal REST API that manages order lifecycle — creation, payment processing,
+  fulfillment, and delivery tracking.
+
+collections:
+  - name: orders
+    displayName: Orders
+    description: Endpoints for creating and querying customer orders.
+    endpointURL: https://api.internal.acme.com/v1/orders
+
+    endpoints:
+      - name: createOrder
+        displayName: Create Order
+        description: Submit a new order for processing.
+        endpointURL: https://api.internal.acme.com/v1/orders
+        requestMethod: POST
+        requestSchema:
+          schemaType: JSON
+          schemaFields:
+            - name: customer_id
+              dataType: STRING
+              description: Unique identifier of the customer placing the order.
+            - name: items
+              dataType: ARRAY
+              description: List of line items in the order.
+              children:
+                - name: sku
+                  dataType: STRING
+                  description: Product SKU.
+                - name: quantity
+                  dataType: INT
+                  description: Quantity ordered.
+                - name: unit_price
+                  dataType: DOUBLE
+                  description: Unit price at time of order.
+            - name: shipping_address
+              dataType: STRING
+              description: Delivery address for the order.
+        responseSchema:
+          schemaType: JSON
+          schemaFields:
+            - name: order_id
+              dataType: STRING
+              description: Server-assigned unique order identifier.
+            - name: status
+              dataType: STRING
+              description: Initial order status (e.g. PENDING).
+            - name: created_at
+              dataType: STRING
+              description: ISO-8601 timestamp of order creation.
+
+      - name: getOrder
+        displayName: Get Order
+        description: Retrieve an order by its ID.
+        endpointURL: https://api.internal.acme.com/v1/orders/{order_id}
+        requestMethod: GET
+        responseSchema:
+          schemaType: JSON
+          schemaFields:
+            - name: order_id
+              dataType: STRING
+              description: Unique order identifier.
+            - name: customer_id
+              dataType: STRING
+              description: Customer who placed the order.
+            - name: items
+              dataType: ARRAY
+              description: Line items in the order.
+            - name: status
+              dataType: STRING
+              description: Current order status.
+            - name: total_amount
+              dataType: DOUBLE
+              description: Total order amount.

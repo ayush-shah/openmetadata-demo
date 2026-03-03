@@ -1,0 +1,69 @@
+# Lineage: Orders API → Fulfillment API
+# Defines the data flow between API endpoints across services.
+#
+# The Fulfillment API's createShipment endpoint consumes order data produced
+# by the Orders API's createOrder endpoint. This YAML captures that dependency
+# so it can be registered as lineage in OpenMetadata, including field-level
+# column lineage with transformation functions.
+
+edges:
+  - description: |
+      The Fulfillment API creates shipments based on new orders.
+      createOrder (Orders API) produces order_id and items which are
+      consumed by createShipment (Fulfillment API) to initiate picking.
+    from:
+      service: orders-api
+      collection: orders
+      endpoint: createOrder
+      entityType: apiEndpoint
+    to:
+      service: fulfillment-api
+      collection: shipments
+      endpoint: createShipment
+      entityType: apiEndpoint
+    sqlQuery: |
+      shipment = {
+          "order_id": order["order_id"],
+          "warehouse_id": assign_warehouse(order["shipping_address"]),
+          "priority": "EXPRESS" if order["total_amount"] > 500 else "STANDARD",
+          "status": "PICKING",
+      }
+    columnLineage:
+      - fromColumns:
+          - orders-api.orders.createOrder.responseSchema.order_id
+        toColumn: fulfillment-api.shipments.createShipment.requestSchema.order_id
+        function: "IDENTITY()"
+      - fromColumns:
+          - orders-api.orders.createOrder.responseSchema.status
+        toColumn: fulfillment-api.shipments.createShipment.responseSchema.status
+        function: "MAP_STATUS(order_status → shipment_status)"
+
+  - description: |
+      Shipment status lookups reference order details.
+      getOrder (Orders API) provides order context consumed by
+      getShipment (Fulfillment API) to correlate shipment data.
+    from:
+      service: orders-api
+      collection: orders
+      endpoint: getOrder
+      entityType: apiEndpoint
+    to:
+      service: fulfillment-api
+      collection: shipments
+      endpoint: getShipment
+      entityType: apiEndpoint
+    sqlQuery: |
+      status_map = {"PENDING": "PICKING", "PAID": "PACKED", "SHIPPED": "SHIPPED"}
+      shipment_status = status_map.get(order["status"], "UNKNOWN")
+      if len(order["items"]) > 10:
+          shipment_status = "SPLIT_" + shipment_status
+    columnLineage:
+      - fromColumns:
+          - orders-api.orders.getOrder.responseSchema.order_id
+        toColumn: fulfillment-api.shipments.getShipment.responseSchema.order_id
+        function: "IDENTITY()"
+      - fromColumns:
+          - orders-api.orders.getOrder.responseSchema.status
+          - orders-api.orders.getOrder.responseSchema.items
+        toColumn: fulfillment-api.shipments.getShipment.responseSchema.status
+        function: "DERIVE_SHIPMENT_STATUS(order_status, item_count)"
