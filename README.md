@@ -1,3 +1,1 @@
-# OpenMetadata Demo
-
-In this repo you can find resources to try out OpenMetadata with different connectors.
+This Repo is archived, do not use this for reference
